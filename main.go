@@ -123,9 +123,7 @@ var mangaItems = []MangaItem{
 
 // обработчик для GET-запроса, возвращает список манги
 func getMangaItemsHandler(w http.ResponseWriter, r *http.Request) {
-	// Устанавливаем заголовки для правильного формата JSON
 	w.Header().Set("Content-Type", "application/json")
-	// Преобразуем список манги в JSON
 	json.NewEncoder(w).Encode(mangaItems)
 }
 
@@ -139,14 +137,20 @@ func createMangaItemHandler(w http.ResponseWriter, r *http.Request) {
 	var newMangaItem MangaItem
 	err := json.NewDecoder(r.Body).Decode(&newMangaItem)
 	if err != nil {
-		fmt.Println("Error decoding request body:", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	fmt.Printf("Received new MangaItem: %+v\n", newMangaItem)
-	var lastID int = len(mangaItems)
+	// Проверка на существование товара с таким же title
+	for _, mangaItem := range mangaItems {
+		if mangaItem.Title == newMangaItem.Title {
+			http.Error(w, "MangaItem with the same title already exists", http.StatusConflict)
+			return
+		}
+	}
 
+	// Генерация уникального ID
+	lastID := 0
 	for _, mangaItem := range mangaItems {
 		if mangaItem.ID > lastID {
 			lastID = mangaItem.ID
@@ -157,11 +161,11 @@ func createMangaItemHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(newMangaItem)
+	fmt.Printf("Created new MangaItem: %+v\n", newMangaItem)
 }
 
 // обработчик для получения одной манги по ID
 func getMangaItemByIDHandler(w http.ResponseWriter, r *http.Request) {
-	// Получаем ID из URL
 	idStr := r.URL.Path[len("/mangaItems/"):]
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -169,7 +173,6 @@ func getMangaItemByIDHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Ищем мангу с данным ID
 	for _, mangaItem := range mangaItems {
 		if mangaItem.ID == id {
 			w.Header().Set("Content-Type", "application/json")
@@ -178,7 +181,6 @@ func getMangaItemByIDHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Если манга не найдена
 	http.Error(w, "MangaItem not found", http.StatusNotFound)
 }
 
@@ -189,7 +191,6 @@ func deleteMangaItemHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Получаем ID из URL
 	idStr := r.URL.Path[len("/mangaItems/delete/"):]
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -197,18 +198,22 @@ func deleteMangaItemHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Ищем и удаляем мангу с данным ID
+	indexToRemove := -1
 	for i, mangaItem := range mangaItems {
 		if mangaItem.ID == id {
-			// Удаляем мангу из среза
-			mangaItems = append(mangaItems[:i], mangaItems[i+1:]...)
-			w.WriteHeader(http.StatusNoContent) // Успешное удаление, нет содержимого
-			return
+			indexToRemove = i
+			break
 		}
 	}
 
-	// Если манга не найдена
-	http.Error(w, "MangaItem not found", http.StatusNotFound)
+	if indexToRemove == -1 {
+		http.Error(w, "MangaItem not found", http.StatusNotFound)
+		return
+	}
+
+	mangaItems = append(mangaItems[:indexToRemove], mangaItems[indexToRemove+1:]...)
+	w.WriteHeader(http.StatusNoContent)
+	fmt.Printf("Deleted MangaItem with ID: %d\n", id)
 }
 
 // обработчик для обновления манги по ID
@@ -218,7 +223,6 @@ func updateMangaItemHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Получаем ID из URL
 	idStr := r.URL.Path[len("/mangaItems/update/"):]
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -226,7 +230,6 @@ func updateMangaItemHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Декодируем обновлённые данные манги
 	var updatedMangaItem MangaItem
 	err = json.NewDecoder(r.Body).Decode(&updatedMangaItem)
 	if err != nil {
@@ -234,35 +237,26 @@ func updateMangaItemHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Ищем мангу для обновления
 	for i, mangaItem := range mangaItems {
 		if mangaItem.ID == id {
-			mangaItems[i].ImagePath = updatedMangaItem.ImagePath
-			mangaItems[i].Title = updatedMangaItem.Title
-			mangaItems[i].Description = updatedMangaItem.Description
-			mangaItems[i].Price = updatedMangaItem.Price
-			mangaItems[i].AdditionalImages = updatedMangaItem.AdditionalImages
-			mangaItems[i].Format = updatedMangaItem.Format
-			mangaItems[i].Publisher = updatedMangaItem.Publisher
-			mangaItems[i].ShortDescription = updatedMangaItem.ShortDescription
-			mangaItems[i].Chapters = updatedMangaItem.Chapters
-
+			updatedMangaItem.ID = id // сохранить текущий ID
+			mangaItems[i] = updatedMangaItem
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(mangaItems[i])
+			fmt.Printf("Updated MangaItem with ID: %d\n", id)
 			return
 		}
 	}
 
-	// Если манга не найдена
 	http.Error(w, "MangaItem not found", http.StatusNotFound)
 }
 
 func main() {
-	http.HandleFunc("/mangaItems", getMangaItemsHandler)           // Получить все манги
-	http.HandleFunc("/mangaItems/create", createMangaItemHandler)  // Создать мангу
-	http.HandleFunc("/mangaItems/", getMangaItemByIDHandler)       // Получить мангу по ID
-	http.HandleFunc("/mangaItems/update/", updateMangaItemHandler) // Обновить мангу
-	http.HandleFunc("/mangaItems/delete/", deleteMangaItemHandler) // Удалить мангу
+	http.HandleFunc("/mangaItems", getMangaItemsHandler)
+	http.HandleFunc("/mangaItems/create", createMangaItemHandler)
+	http.HandleFunc("/mangaItems/", getMangaItemByIDHandler)
+	http.HandleFunc("/mangaItems/update/", updateMangaItemHandler)
+	http.HandleFunc("/mangaItems/delete/", deleteMangaItemHandler)
 
 	fmt.Println("Server is running on port 8080!")
 	http.ListenAndServe(":8080", nil)
