@@ -328,7 +328,7 @@ class MangaDetailsScreen extends StatelessWidget {
               child: const Text('Удалить'),
               onPressed: () async {
                 try {
-                  await ApiService().deleteProduct(mangaItem.id); // Удаляем товар через API
+                  // Удаляем товар через API
                   onDelete(); // Вызываем функцию удаления
                   Navigator.of(context).pop(); // Закрываем диалоговое окно
                   Navigator.pop(context); // Возвращаемся на предыдущий экран
