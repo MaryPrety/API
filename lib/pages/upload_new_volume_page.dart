@@ -8,11 +8,6 @@ const Color primaryColor = Color(0xFFC84B31);
 const Color secondaryColor = Color(0xFFECDBBA);
 const Color textColor = Color(0xFF56423D);
 const Color backgroundColor = Color(0xFF191919);
-const Color accentColor = Color(0xFFC84B31);
-
-const double defaultPadding = 16.0;
-const double defaultRadius = 10.0;
-const double defaultTextSize = 14.0;
 
 class UploadNewVolumePage extends StatefulWidget {
   final ValueChanged<MangaItem?> onItemCreated;
@@ -32,6 +27,7 @@ class _UploadNewVolumePageState extends State<UploadNewVolumePage> {
   final TextEditingController _formatController = TextEditingController();
   final TextEditingController _publisherController = TextEditingController();
   final List<String> _imageLinks = [];
+  bool _isSubmitting = false;
 
   final List<String> formatTexts = [
     'Твердый переплет\nФормат издания 19.6 x 12.5 см\nкол-во стр от 380 до 400',
@@ -44,17 +40,6 @@ class _UploadNewVolumePageState extends State<UploadNewVolumePage> {
     'Издательство Другое Комикс',
     'Издательство Еще Комикс',
     'Alt Graph',
-  ];
-
-  final List<String> chapterTexts = [
-    '№ глав: 1-36  + дополнительные истории',
-    '№ глав: 37-74',
-    '№ глав: 75-112',
-    '№ глав: 113-150',
-    '№ глав: 151-188',
-    '№ глав: 189-226',
-    '№ глав: 227-264',
-    '№ глав: 265-300',
   ];
 
   void _addImage() {
@@ -90,16 +75,14 @@ class _UploadNewVolumePageState extends State<UploadNewVolumePage> {
                     });
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Пожалуйста, введите корректную ссылку на изображение")),
+                      const SnackBar(content: Text("Введите корректную ссылку на изображение")),
                     );
                   }
                 },
                 child: const Text("Добавить"),
               ),
               TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
+                onPressed: () => Navigator.of(context).pop(),
                 child: const Text("Отмена"),
               ),
             ],
@@ -113,12 +96,6 @@ class _UploadNewVolumePageState extends State<UploadNewVolumePage> {
     }
   }
 
-  void _removeImage(int index) {
-    setState(() {
-      _imageLinks.removeAt(index);
-    });
-  }
-
   bool _validateInputs() {
     return _volumeController.text.isNotEmpty &&
            _chaptersController.text.isNotEmpty &&
@@ -127,18 +104,19 @@ class _UploadNewVolumePageState extends State<UploadNewVolumePage> {
            _fullDescriptionController.text.isNotEmpty &&
            _formatController.text.isNotEmpty &&
            _publisherController.text.isNotEmpty &&
-           _imageLinks.isNotEmpty;
+           _imageLinks.length == 3;
   }
 
-  void _submit() async {
+  Future<void> _submit() async {
     if (_validateInputs()) {
+      setState(() => _isSubmitting = true);
       final newMangaItem = MangaItem(
-        id: 0, // Пустой id, так как сервер его сгенерирует
-        imagePath: _imageLinks.isNotEmpty ? _imageLinks[0] : '',
+        id: 0, 
+        imagePath: _imageLinks[0],
         title: _volumeController.text,
         description: _fullDescriptionController.text,
         price: _priceController.text,
-        additionalImages: _imageLinks.sublist(1), 
+        additionalImages: _imageLinks.sublist(1),
         format: _formatController.text,
         publisher: _publisherController.text,
         shortDescription: _shortDescriptionController.text, 
@@ -146,17 +124,27 @@ class _UploadNewVolumePageState extends State<UploadNewVolumePage> {
       );
 
       try {
+        final existingProducts = await ApiService().fetchProducts();
+        if (existingProducts.any((product) => product.title == newMangaItem.title)) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Товар с таким названием уже существует")),
+          );
+          return;
+        }
+
         final createdItem = await ApiService().createProduct(newMangaItem);
         widget.onItemCreated(createdItem);
-        Navigator.pop(context, createdItem); // Возвращаем созданный товар
+        Navigator.pop(context, createdItem);
       } catch (error) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Ошибка при создании товара: $error')),
         );
+      } finally {
+        setState(() => _isSubmitting = false);
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Пожалуйста, заполните все поля и добавьте хотя бы одно изображение")),
+        const SnackBar(content: Text("Пожалуйста, заполните все поля и добавьте ровно 3 изображения")),
       );
     }
   }
@@ -176,208 +164,132 @@ class _UploadNewVolumePageState extends State<UploadNewVolumePage> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(defaultPadding),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text(
-                "MANgo100+",
-                style: TextStyle(color: primaryColor, fontSize: 36, fontFamily: 'Russo One'),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 20),
-              ListView(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                children: [
-                  _buildInputField('Какой том', _volumeController, hintText: 'Например, Том 1'),
-                  const SizedBox(height: 15),
-                  _buildInputField('Главы', _chaptersController, hintText: 'Например, № глав: 1-36 + дополнительные истории'),
-                  const SizedBox(height: 15),
-                  _buildInputField('Цена', _priceController, hintText: 'Например, 100 рублей'),
-                  const SizedBox(height: 15),
-                  _buildDropdownField('Формат издания', _formatController, formatTexts),
-                  const SizedBox(height: 15),
-                  _buildDropdownField('Издательство', _publisherController, publisherTexts),
-                  const SizedBox(height: 15),
-                  Row(
-                    children: [
-                      const Expanded(
-                        child: Text("Добавить изображения", style: TextStyle(color: primaryColor)),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.add, color: secondaryColor),
-                        onPressed: _addImage,
-                      ),
-                    ],
-                  ),
-                  ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: _imageLinks.length,
-                    itemBuilder: (context, index) {
-                      return Row(
+      body: _isSubmitting
+          ? const Center(child: CircularProgressIndicator())
+          : Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Text(
+                      "MANgo100+",
+                      style: TextStyle(color: primaryColor, fontSize: 36, fontFamily: 'Russo One'),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 20),
+                    _buildInputField('Какой том', _volumeController, hintText: 'Например, Том 1'),
+                    const SizedBox(height: 15),
+                    _buildInputField('Главы', _chaptersController, hintText: 'Например, № глав: 1-36 + дополнительные истории'),
+                    const SizedBox(height: 15),
+                    _buildInputField('Цена', _priceController, hintText: 'Например, 100 рублей', keyboardType: TextInputType.number),
+                    const SizedBox(height: 15),
+                    _buildDropdownField('Формат издания', _formatController, formatTexts),
+                    const SizedBox(height: 15),
+                    _buildDropdownField('Издательство', _publisherController, publisherTexts),
+                    const SizedBox(height: 15),
+                    Row(
+                      children: [
+                        const Expanded(
+                          child: Text("Добавить изображения", style: TextStyle(color: primaryColor)),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.add, color: secondaryColor),
+                          onPressed: _addImage,
+                        ),
+                      ],
+                    ),
+                    ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: _imageLinks.length,
+                      itemBuilder: (context, index) => Row(
                         children: [
-                          Text("Image", style: const TextStyle(color: textColor)),
-                          if (index == 0) const Text(" (Обложка)", style: TextStyle(color: primaryColor)),
-                          if (index > 0) const Text(" (Доп. изображение)", style: TextStyle(color: textColor)),
+                          Text(
+                            "Изображение ${index + 1}",
+                            style: TextStyle(color: index == 0 ? primaryColor : textColor),
+                          ),
                           IconButton(
                             icon: const Icon(Icons.delete, color: Colors.red),
-                            onPressed: () => _removeImage(index),
+                            onPressed: () => setState(() => _imageLinks.removeAt(index)),
                           ),
                         ],
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 15),
-                  _buildTextArea('Краткое описание', _shortDescriptionController, height: 88, hintText: 'Например, Знакомство с Кагэямой Сигэо...'),
-                  const SizedBox(height: 15),
-                  _buildTextArea('Полное описание', _fullDescriptionController, height: 118, hintText: 'Например, Моб сталкивается с новыми врагами...'),
-                ],
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _submit,
-                child: Text(
-                  "Опубликовать",
-                  style: TextStyle(
-                    color: secondaryColor,
-                    fontSize: isMobile ? 16.0 : 20.0,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryColor,
-                  padding: const EdgeInsets.symmetric(vertical: 15),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(defaultRadius),
-                  ),
+                      ),
+                    ),
+                    const SizedBox(height: 15),
+                    _buildTextArea('Краткое описание', _shortDescriptionController, hintText: 'Описание в нескольких строках...'),
+                    const SizedBox(height: 15),
+                    _buildTextArea('Полное описание', _fullDescriptionController, hintText: 'Детальное описание...'),
+                    const SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: _submit,
+                      child: Text(
+                        "Опубликовать",
+                        style: TextStyle(color: secondaryColor, fontSize: isMobile ? 16.0 : 20.0),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryColor,
+                        padding: const EdgeInsets.symmetric(vertical: 12.0),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
-        ),
+            ),
+    );
+  }
+
+  Widget _buildInputField(String label, TextEditingController controller, {String hintText = '', TextInputType? keyboardType}) {
+    return TextField(
+      controller: controller,
+      keyboardType: keyboardType,
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hintText,
+        filled: true,
+        fillColor: secondaryColor,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0)),
       ),
     );
   }
 
-  Widget _buildInputField(String label, TextEditingController controller, {String? hintText}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: textColor,
-            fontSize: 16.0,
-          ),
-        ),
-        const SizedBox(height: 5),
-        TextFormField(
-          controller: controller,
-          decoration: InputDecoration(
-            hintText: hintText,
-            filled: true,
-            fillColor: secondaryColor,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(defaultRadius),
-              borderSide: BorderSide.none,
-            ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          ),
-          style: const TextStyle(
-            color: textColor,
-            fontSize: defaultTextSize,
-            fontFamily: 'Tektur',
-          ),
-        ),
-      ],
+  Widget _buildDropdownField(String label, TextEditingController controller, List<String> options) {
+    return DropdownButtonFormField<String>(
+      value: options.contains(controller.text) ? controller.text : null,
+      items: options.map((option) => DropdownMenuItem(value: option, child: Text(option))).toList(),
+      onChanged: (value) => setState(() => controller.text = value ?? ''),
+      decoration: InputDecoration(
+        labelText: label,
+        filled: true,
+        fillColor: secondaryColor,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0)),
+      ),
     );
   }
 
-  Widget _buildDropdownField(String label, TextEditingController controller, List<String> items) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: secondaryColor,
-            fontSize: 14.0,
-          ),
-        ),
-        const SizedBox(height: 5),
-        DropdownButtonFormField<String>(
-          value: controller.text.isNotEmpty ? controller.text : null,
-          onChanged: (String? newValue) {
-            setState(() {
-              if (newValue == 'Другое') {
-                controller.clear(); 
-              } else {
-                controller.text = newValue!;
-              }
-            });
-          },
-          items: items.map<DropdownMenuItem<String>>((String value) {
-            return DropdownMenuItem<String>(
-              value: value,
-              child: Text(value),
-            );
-          }).toList(),
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: secondaryColor,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(defaultRadius),
-              borderSide: BorderSide.none,
-            ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          ),
-          style: const TextStyle(
-            color: textColor,
-            fontSize: defaultTextSize,
-            fontFamily: 'Tektur',
-          ),
-        ),
-      ],
+  Widget _buildTextArea(String label, TextEditingController controller, {String hintText = ''}) {
+    return TextField(
+      controller: controller,
+      minLines: 3,
+      maxLines: 5,
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hintText,
+        filled: true,
+        fillColor: secondaryColor,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0)),
+      ),
     );
   }
 
-  Widget _buildTextArea(String label, TextEditingController controller, {required double height, String? hintText}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: secondaryColor,
-            fontSize: 16.0,
-          ),
-        ),
-        const SizedBox(height: 5),
-        Container(
-          height: height,
-          decoration: BoxDecoration(
-            color: secondaryColor,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: TextFormField(
-            controller: controller,
-            decoration: InputDecoration(
-              hintText: hintText,
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.all(12),
-            ),
-            style: const TextStyle(
-              color: textColor,
-              fontSize: defaultTextSize,
-              fontFamily: 'Tektur',
-            ),
-            maxLines: null,
-          ),
-        ),
-      ],
-    );
+  @override
+  void dispose() {
+    _volumeController.dispose();
+    _chaptersController.dispose();
+    _priceController.dispose();
+    _shortDescriptionController.dispose();
+    _fullDescriptionController.dispose();
+    _formatController.dispose();
+    _publisherController.dispose();
+    super.dispose();
   }
 }
