@@ -26,14 +26,14 @@ class MangaItem {
   factory MangaItem.fromJson(Map<String, dynamic> json) {
     return MangaItem(
       id: json['id'],
-      imagePath: _ensureImageFormat(json['imagePath'] ?? ''),
+      imagePath: json['image_path'] ?? '',
       title: json['title'] ?? '',
       description: json['description'] ?? '',
       price: json['price'] ?? '',
-      additionalImages: List<String>.from(json['additionalImages']?.map((image) => _ensureImageFormat(image)) ?? []),
+      additionalImages: List<String>.from(json['additional_images'] ?? []),
       format: json['format'] ?? '',
       publisher: json['publisher'] ?? '',
-      shortDescription: json['shortDescription'] ?? '',
+      shortDescription: json['short_description'] ?? '',
       chapters: json['chapters'] ?? '',
     );
   }
@@ -41,23 +41,15 @@ class MangaItem {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'imagePath': imagePath,
+      'image_path': imagePath,
       'title': title,
       'description': description,
       'price': price,
-      'additionalImages': additionalImages,
+      'additional_images': additionalImages,
       'format': format,
       'publisher': publisher,
-      'shortDescription': shortDescription,
+      'short_description': shortDescription,
       'chapters': chapters,
     };
-  }
-
-  static String _ensureImageFormat(String imagePath) {
-    if (imagePath.isEmpty) return '';
-    if (!imagePath.endsWith('.jpg') && !imagePath.endsWith('.png')) {
-      return '$imagePath.jpg'; // Добавляем формат изображения по умолчанию
-    }
-    return imagePath;
   }
 }
