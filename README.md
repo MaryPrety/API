@@ -39,8 +39,8 @@
 Проект предоставляет возможность более детально изучить разработку корпоративных приложений, а также закрепить практические навыки работы с кроссплатформенными технологиями и управлением пользовательским интерфейсом.
 
 ![{DB745C27-3B00-4DEC-AFA0-B08171DAEDED}](https://github.com/user-attachments/assets/e4947711-967d-46c8-bcf1-a129717bcdf3)
-![image](https://github.com/user-attachments/assets/6ec53ec8-f94f-449c-92df-23cff04bddaa)
-![image](https://github.com/user-attachments/assets/d149f790-b56f-4fbd-9ae3-3a055cfb7a97)
+![{4F917D88-EA8E-454F-815A-87CDCEF5A22F}](https://github.com/user-attachments/assets/920d0693-71a7-4232-bc82-da0323cb2972)
+![{8B978F7D-651A-473D-966A-1329301C5A04}](https://github.com/user-attachments/assets/755b0ed9-fb94-466b-9810-2819a3e2db41)
 ![image](https://github.com/user-attachments/assets/4a14cfab-a658-42b7-8ff2-5914af3c5fed)
 ![image](https://github.com/user-attachments/assets/15013c4c-7424-4457-a4a0-7b7b8edbe267)
 Начальное отобравжение в Postamn
