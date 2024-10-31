@@ -38,7 +38,8 @@
 
 Проект предоставляет возможность более детально изучить разработку корпоративных приложений, а также закрепить практические навыки работы с кроссплатформенными технологиями и управлением пользовательским интерфейсом.
 
-![image](https://github.com/user-attachments/assets/d1a6dc14-dfb0-4fa0-a0fb-87d1eaa7f09e)
+![{918C3DA6-5190-482D-8F1A-F961391B58EA}](https://github.com/user-attachments/assets/579af1db-0fe9-408e-85eb-e58fc54428d5)
+
 ![image](https://github.com/user-attachments/assets/6ec53ec8-f94f-449c-92df-23cff04bddaa)
 ![image](https://github.com/user-attachments/assets/d149f790-b56f-4fbd-9ae3-3a055cfb7a97)
 ![image](https://github.com/user-attachments/assets/4a14cfab-a658-42b7-8ff2-5914af3c5fed)
