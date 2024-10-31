@@ -43,6 +43,7 @@
 ![image](https://github.com/user-attachments/assets/d149f790-b56f-4fbd-9ae3-3a055cfb7a97)
 ![image](https://github.com/user-attachments/assets/4a14cfab-a658-42b7-8ff2-5914af3c5fed)
 ![image](https://github.com/user-attachments/assets/15013c4c-7424-4457-a4a0-7b7b8edbe267)
-
-
+Начальное отобравжение в Postamn
+![{C9B0547F-7BA8-4EFE-923B-289B9343DFD4}](https://github.com/user-attachments/assets/7ca3a0f3-534e-460a-a157-61528ed28b5b)
+![{81256824-D78B-48AD-931F-DA9AC43EAB73}](https://github.com/user-attachments/assets/2c53fcdc-9d90-44b5-a29e-b4e6136d0fb4)
 
